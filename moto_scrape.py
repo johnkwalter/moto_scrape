@@ -1,7 +1,16 @@
 import requests
 import urllib
 from bs4 import BeautifulSoup
-from craigslist import CraigslistForSale
+import time
+
+# selenium 4
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+
+driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
+# above imports and driver from https://pypi.org/project/webdriver-manager/
 
 from urllib.parse import urlparse
 
@@ -9,15 +18,19 @@ from urllib.parse import urlparse
 # https://seattle.craigslist.org/search/see/mca?purveyor=owner#search=1~list~0~0
 
 
-CraigslistForSale.show_categories()
+url="https://seattle.craigslist.org/search/see/mca?purveyor=owner#search=1~list~3~0"
 
-#test = CraigslistForSale(site='seattle', area='see', category='mca')
+citys = ["seattle", "portland", "sfbay"]
 
-#for result in test.get_results(sort_by="newest"):
-#    print(result)
+driver.get(url)
+print(driver)
+time.sleep(3)
+results_list = driver.find_elements(By.CLASS_NAME, "titlestring")
+print(f"The results list is {len(results_list)} elements long.")
+for elem in results_list:
+    print(elem.get_attribute('href'))
 
-url="https://seattle.craigslist.org/search/see/mca?purveyor=owner#search=1~list~0~0"
-
+print(driver.current_url)
 # print(urlparse(url))
 
 # r = requests.get(url)
@@ -26,16 +39,10 @@ url="https://seattle.craigslist.org/search/see/mca?purveyor=owner#search=1~list~
 # posts = soup.find_all('li', class_="cl-search-result")
 # print(posts)
 
-cl_s = CraigslistForSale()
-
 """
-class "titlestring" contains the needed href info. including the post ID
+scrape function:
+itterate through cities list
+perform a driver call on each city, until our route number we get back, matches a search we have already performed.
+then move to the next city in the list.
 
-using urllib grab just the post ID and add it to a set this will handle duplicate posts (reposts which likely have a new ID will not be handled by this)
-    if that number is not in the set, we scrape it and add the information to our DF or CSV file
-    else: that number exists inside the set, we ignore it and move on. 
-
-Itterates through all the titlestring classed elements then moves on to the next page and repeats. 
-
-we can change the city in the URL for each scrape.
 """
