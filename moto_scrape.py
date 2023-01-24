@@ -1,6 +1,7 @@
 import requests
 import urllib
 from bs4 import BeautifulSoup
+from craigslist import CraigslistForSale
 
 from urllib.parse import urlparse
 
@@ -8,16 +9,24 @@ from urllib.parse import urlparse
 # https://seattle.craigslist.org/search/see/mca?purveyor=owner#search=1~list~0~0
 
 
+CraigslistForSale.show_categories()
+
+#test = CraigslistForSale(site='seattle', area='see', category='mca')
+
+#for result in test.get_results(sort_by="newest"):
+#    print(result)
+
 url="https://seattle.craigslist.org/search/see/mca?purveyor=owner#search=1~list~0~0"
 
-print(urlparse(url))
+# print(urlparse(url))
 
-r = requests.get(url)
-soup = BeautifulSoup(r.content, 'html.parser')
-print(soup)
-posts = soup.find_all('li', class_="cl-search-result")
-print(posts)
+# r = requests.get(url)
+# soup = BeautifulSoup(r.content, 'html.parser')
+# print(soup)
+# posts = soup.find_all('li', class_="cl-search-result")
+# print(posts)
 
+cl_s = CraigslistForSale()
 
 """
 class "titlestring" contains the needed href info. including the post ID
