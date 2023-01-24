@@ -1,15 +1,23 @@
 import requests
 import urllib
 from bs4 import BeautifulSoup
+
 from urllib.parse import urlparse
 
 # https://seattle.craigslist.org/see/mcy/d/seattle-2012-kawasaki-ninja-1000/7581479142.html > result of titlestring class grab. 
-# https://seattle.craigslist.org/search/see/mca#search=1~gallery~1~38
+# https://seattle.craigslist.org/search/see/mca?purveyor=owner#search=1~list~0~0
 
 
-url="https://seattle.craigslist.org/search/see/mca#search=1~gallery~1~38"
+url="https://seattle.craigslist.org/search/see/mca?purveyor=owner#search=1~list~0~0"
 
 print(urlparse(url))
+
+r = requests.get(url)
+soup = BeautifulSoup(r.content, 'html.parser')
+print(soup)
+posts = soup.find_all('li', class_="cl-search-result")
+print(posts)
+
 
 """
 class "titlestring" contains the needed href info. including the post ID
