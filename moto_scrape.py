@@ -27,11 +27,6 @@ TODO: break the received URLS into parts and place the unique post IDs
 
 """
 
-
-# https://seattle.craigslist.org/see/mcy/d/seattle-2012-kawasaki-ninja-1000/7581479142.html > result of titlestring class grab. 
-# https://seattle.craigslist.org/search/see/mca?purveyor=owner#search=1~list~0~0
-
-
 url_test = "https://seattle.craigslist.org/search/mca?purveyor=owner#search=1~list~0~0"
 url_ad_list_test = ["https://seattle.craigslist.org/see/mcd/d/seattle-2020-harley-davidson-fat-bob/7582174231.html",
             "https://seattle.craigslist.org/see/mcd/d/kent-2018-kawasaki-z650-stunt-bike/7582217722.html",
@@ -40,6 +35,7 @@ url_ad_list_test = ["https://seattle.craigslist.org/see/mcd/d/seattle-2020-harle
 
 citys = ["seattle", "portland", "sfbay"]
 
+# Brings up a list of search results on Craiglist and scrapes all of the urls of each ad
 def get_list_of_urls(url):
     driver.get(url)
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "titlestring")))
@@ -49,6 +45,7 @@ def get_list_of_urls(url):
         url_list.append(elem.get_attribute('href'))
     return url_list
 
+# Crawls through an individual ad and creates a dictionary of the ad details
 def cl_ad_scrape(url):
     driver.get(url)
     details_dict = {}
@@ -87,6 +84,7 @@ def cl_ad_scrape(url):
 
     return details_dict
 
+# Create a blank dictionary to initialize a dataframe from
 ad_details_dict = {
     # 'title' : [],
     # 'url' : [],
@@ -101,14 +99,17 @@ ad_details_dict = {
 
 main_df = pd.DataFrame([ad_details_dict])
 
+# Creates a list of urls from a search results page
 url_ad_list = get_list_of_urls(url_test)
 
+# Adds a new row to the dataframe for each individual ad
 for url_ad in url_ad_list:
     time.sleep(random.randint(0,3))
     ad_details = cl_ad_scrape(url_ad)
     new_df = pd.DataFrame([ad_details])
     main_df = pd.concat([main_df, new_df], ignore_index=True)
 
+# Creates a csv file with all of the dataframe information
 main_df.to_csv('test_df_to_csv.csv', encoding='utf-8', index=False)
 
 
