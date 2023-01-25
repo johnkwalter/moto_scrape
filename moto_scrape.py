@@ -2,7 +2,9 @@ import requests
 import urllib
 from bs4 import BeautifulSoup
 import time
+import random
 import re
+import pandas as pd
 
 # selenium 4
 from selenium import webdriver
@@ -23,7 +25,6 @@ TODO: functionize selenium code
 TODO: handle when driver gets redirected to an already visited page
 TODO: break the received URLS into parts and place the unique post IDs
 
-JOHN: Turn the cl_ad_scrape into it's own Class maybe?
 """
 
 
@@ -31,49 +32,84 @@ JOHN: Turn the cl_ad_scrape into it's own Class maybe?
 # https://seattle.craigslist.org/search/see/mca?purveyor=owner#search=1~list~0~0
 
 
-url="https://seattle.craigslist.org/search/see/mca?purveyor=owner#search=1~list~0~0"
-url_ad = "https://seattle.craigslist.org/see/mcd/d/seattle-2020-harley-davidson-fat-bob/7582174231.html"
+url_test = "https://seattle.craigslist.org/search/mca?purveyor=owner#search=1~list~0~0"
+url_ad_list_test = ["https://seattle.craigslist.org/see/mcd/d/seattle-2020-harley-davidson-fat-bob/7582174231.html",
+            "https://seattle.craigslist.org/see/mcd/d/kent-2018-kawasaki-z650-stunt-bike/7582217722.html",
+            "https://seattle.craigslist.org/see/mcd/d/kent-2021-bmw-m1000rr/7582086314.html",
+            ]
 
 citys = ["seattle", "portland", "sfbay"]
 
-driver.get(url)
-
-def get_list_of_urls():
+def get_list_of_urls(url):
+    driver.get(url)
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "titlestring")))
     results_list = driver.find_elements(By.CLASS_NAME, 'titlestring')
-    # results_list = driver.find_elements(By.CLASS_NAME, "titlestring")
+    url_list = []
     for elem in results_list:
-        print(elem.get_attribute('href'))
-    print(f"The results list is {len(results_list)} elements long.")
+        url_list.append(elem.get_attribute('href'))
+    return url_list
 
 def cl_ad_scrape(url):
     driver.get(url)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "postingbody")))
-    title = driver.find_element(By.ID, 'titletextonly').text
-    price = driver.find_element(By.CLASS_NAME, 'price').text
-    body_of_ad = driver.find_element(By.ID, 'postingbody').text
-    side_info = driver.find_elements(By.CLASS_NAME, 'attrgroup')
-    side_details = side_info[1].text.split('\n')
     details_dict = {}
-    for val in side_details:
-        detail = re.split('[-:]', val)
-        try:
-            details_dict[detail[0]] = detail[1].lstrip()
-        except:
-            details_dict[detail[0]] = "Blank or N/A"
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "postingbody")))
+    try:
+        details_dict['title'] = driver.find_element(By.ID, 'titletextonly').text
+    except:
+        details_dict['title'] = 'blank'
+
+    try:
+        details_dict['url'] = driver.current_url
+    except:
+        details_dict['url'] = 'blank'
     
-    return [title, price, body_of_ad, details_dict]
-    # print(title)
-    # print(price)
-    # print(body_of_ad)
-    # print(details_dict)
+    try:
+        details_dict['price'] = driver.find_element(By.CLASS_NAME, 'price').text
+    except:
+        details_dict['price'] = 'blank'
+    
+    try:
+        details_dict['body'] = driver.find_element(By.ID, 'postingbody').text
+    except:
+        details_dict['body'] = 'blank'
 
-ad_details_list = cl_ad_scrape(url_ad)
-for var in ad_details_list:
-    print(var)
+    try:
+        side_info = driver.find_elements(By.CLASS_NAME, 'attrgroup')
+        side_details = side_info[1].text.split('\n')
+        for val in side_details:
+            detail = re.split('[-:]', val)
+            try:
+                details_dict[detail[0]] = detail[1].lstrip()
+            except:
+                details_dict[detail[0]] = "yes"
+    except:
+        pass
 
+    return details_dict
 
-print(driver.current_url)
+ad_details_dict = {
+    # 'title' : [],
+    # 'url' : [],
+    # 'price' : [],
+    # 'body' : [],
+    # 'fuel' : [],
+    # 'odometer' : [],
+    # 'street legal' : [],
+    # 'title status' : [],
+    # 'transmission' : [],
+}
+
+main_df = pd.DataFrame([ad_details_dict])
+
+url_ad_list = get_list_of_urls(url_test)
+
+for url_ad in url_ad_list:
+    time.sleep(random.randint(0,3))
+    ad_details = cl_ad_scrape(url_ad)
+    new_df = pd.DataFrame([ad_details])
+    main_df = pd.concat([main_df, new_df], ignore_index=True)
+
+main_df.to_csv('test_df_to_csv.csv', encoding='utf-8', index=False)
 
 
 """
