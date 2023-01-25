@@ -61,10 +61,16 @@ def cl_ad_scrape(url):
         details_dict['url'] = 'blank'
     
     try:
+        post_id = re.search(r'\/(\d+)\.', driver.current_url)
+        details_dict['id'] = post_id.group(1)
+    except:
+        details_dict['id'] = 'blank'
+        
+    try:
         details_dict['price'] = driver.find_element(By.CLASS_NAME, 'price').text
     except:
         details_dict['price'] = 'blank'
-    
+
     try:
         details_dict['body'] = driver.find_element(By.ID, 'postingbody').text
     except:
@@ -103,7 +109,7 @@ main_df = pd.DataFrame([ad_details_dict])
 url_ad_list = get_list_of_urls(url_test)
 
 # Adds a new row to the dataframe for each individual ad
-for url_ad in url_ad_list:
+for url_ad in url_ad_list_test:
     time.sleep(random.randint(0,3))
     ad_details = cl_ad_scrape(url_ad)
     new_df = pd.DataFrame([ad_details])
