@@ -6,6 +6,7 @@ import random
 import re
 import pandas as pd
 
+
 # selenium 4
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -41,7 +42,7 @@ for city in cities:
 # Brings up a list of search results on Craiglist and scrapes all of the urls of each ad
 def get_list_of_urls(url):
     driver.get(url)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "titlestring")))
+    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "titlestring"))) 
     results_list = driver.find_elements(By.CLASS_NAME, 'titlestring')
     url_list = []
     for elem in results_list:
@@ -132,12 +133,3 @@ for url_ad in full_url_ad_list:
 
 # Creates a csv file with all of the dataframe information
 main_df.to_csv('test_df_to_csv.csv', encoding='utf-8', index=False)
-
-
-"""
-scrape function:
-itterate through cities list
-perform a driver call on each city, until our route number we get back, matches a search we have already performed.
-then move to the next city in the list.
-
-"""
