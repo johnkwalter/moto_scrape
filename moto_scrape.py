@@ -21,14 +21,12 @@ driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install())
 from urllib.parse import urlparse
 
 """
-TODO: intelligently itterate the url for each loop
-TODO: functionize selenium code
+TODO: DONE intelligently itterate the url for each loop
+TODO: DONE functionize selenium code
 TODO: handle when driver gets redirected to an already visited page
-TODO: break the received URLS into parts and place the unique post IDs
+TODO: DONE break the received URLS into parts and place the unique post IDs
 
-TODO: Read back list of already captured urls, compare it to newly captured list,
-        and keep only the new urls
-TODO: Incorporate list of cities to iterate through to create big url list
+TODO: DONE Incorporate list of cities to iterate through to create big url list
 """
 
 # Url variables to test from
@@ -38,8 +36,10 @@ url_ad_list_test = ["https://seattle.craigslist.org/see/mcd/d/seattle-2020-harle
             "https://seattle.craigslist.org/see/mcd/d/kent-2021-bmw-m1000rr/7582086314.html",
             ]
 
+dataframe_loc = 'test_df_to_csv.csv'
+
 # List of cities that craigslist motorcycle ads will be scraped from
-cities = ["bellingham", "yakima"]
+cities = ["wenatchee", "bellingham", "yakima"]
 
 # Create a blank dictionary to initialize a dataframe from
 ad_details_dict = {
@@ -54,8 +54,9 @@ ad_details_dict = {
     # 'transmission' : [],
 }
 
-# Create a blank dataframe from that blank dictionary
-main_df = pd.DataFrame([ad_details_dict])
+# Create a blank dataframe from that blank dictionary -OR- import existing dataframe
+# main_df = pd.DataFrame([ad_details_dict])
+main_df = pd.read_csv(dataframe_loc)
 
 # Create a list of urls by list of cities to search craigslist with
 def city_search_url_list(cities):
@@ -151,8 +152,8 @@ def add_ad_to_dataframe(full_url_ad_list, main_df):
         new_df = pd.DataFrame([ad_details])
         main_df = pd.concat([main_df, new_df], ignore_index=True)
         i+=1
-        if i%50 == 0:
-            print(f"{str(i)} of {str(total)} scraped ")
+        if i%10 == 0:
+            print(f"{str(i)} of {str(total)} scraped ~{str(2*(total - i))} seconds left")
     return main_df
 
 # Combines all of the city ad lists into one large url list
@@ -164,9 +165,19 @@ def combine_city_url_lists(url_search_list):
             full_url_ad_list.append(url)
     return full_url_ad_list
 
+def dedupe_url_ad_list(full_url_ad_list, main_df):
+    deduped_url_ad_list = []
+    established_url_list = main_df["url"].values.tolist()
+    for url in full_url_ad_list:
+        if url not in established_url_list:
+            deduped_url_ad_list.append(url)
+    return deduped_url_ad_list
+
 url_search_list = city_search_url_list(cities)
 full_url_ad_list = combine_city_url_lists(url_search_list)
-main_df = add_ad_to_dataframe(full_url_ad_list, main_df)
+deduped_url_ad_list = dedupe_url_ad_list(full_url_ad_list, main_df)
+
+new_main_df = add_ad_to_dataframe(deduped_url_ad_list, main_df)
 
 # Creates a csv file with all of the dataframe information
-main_df.to_csv('test_df_to_csv.csv', encoding='utf-8', index=False)
+new_main_df.to_csv('test_df_to_csv.csv', encoding='utf-8', index=False)
