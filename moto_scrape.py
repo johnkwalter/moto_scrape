@@ -10,13 +10,16 @@ from datetime import datetime
 
 # selenium 4
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 
-driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
+options = Options()
+options.page_load_strategy = 'normal'
+driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 # above imports and driver from https://pypi.org/project/webdriver-manager/
 
 from urllib.parse import urlparse
@@ -30,6 +33,9 @@ TODO: DONE break the received URLS into parts and place the unique post IDs
 TODO: DONE Incorporate list of cities to iterate through to create big url list
 TODO: DONE Dedupe dataframe upon writing it to a csv
 TODO: Variable and function names are messy and could be made clearer
+
+BUG: Navigating to 4th page of search results redirects to 3rd page
+        https://projectsnproducts.atlassian.net/browse/MS-11
 """
 
 # Name of the dataframe
@@ -81,8 +87,7 @@ def city_search_url_list(cities):
     return base_city_url_search_list
 
 # Brings up a list of search results on Craiglist and scrapes all of the urls of each ad
-def get_list_of_urls(url):
-    driver.get(url)
+def get_list_of_urls():
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "titlestring")))
     results_list = driver.find_elements(By.CLASS_NAME, 'titlestring')
     url_ad_list = []
@@ -146,7 +151,7 @@ def cl_ad_scrape(url):
 # Creates a list of urls from a search results page
 def get_url_ad_list(base_url):
     full_url_ad_list = []
-    last_page = 1000
+    last_page = 100
     try: # In case a url isn't working this won't crash the program
         driver.get(base_url + str(last_page) + '~0')
     except:
@@ -156,12 +161,16 @@ def get_url_ad_list(base_url):
     last_page = re.search(r'~(\d+)~', driver.current_url)
     last_page = int(last_page.group(1))
     i = 0
+    driver.get(base_url + str(i) + '~0')
     while i <= last_page:
-        url = base_url + str(i) + '~0'
-        url_ad_list = get_list_of_urls(url)
+        time.sleep(1)
+        print(f' scraping page {str(i+1)} of {str(last_page+1)} of search results for {base_url}      ', end ='\r')
+        url_ad_list = get_list_of_urls()
         for url in url_ad_list:
             full_url_ad_list.append(url)
+        driver.find_element(By.CLASS_NAME, 'cl-next-page').click()
         i+=1
+    print('') # <-- clear the line where cursor is located
     return full_url_ad_list
 
 # Adds a new row to the dataframe for each individual ad
@@ -203,7 +212,7 @@ def dedupe_url_ad_list_from_df(ad_list, main_df):
     for url in ad_list:
         if url not in established_url_list:
             deduped_url_ad_list.append(url)
-    print(f'{str(len(deduped_url_ad_list))} new ads have been found')
+    print(f' {str(len(deduped_url_ad_list))} new ads have been found')
     return deduped_url_ad_list
 
 # Deduplicates the rows in the dataframe based on the URL
@@ -218,7 +227,7 @@ def dedupe_dataframe(dataframe, column):
         else:
             duplicates.append(url)
 
-    print(f'{len(duplicates)} duplicate rows will be removed from DataFrame')
+    print(f' {len(duplicates)} duplicate rows will be removed from DataFrame')
     dataframe.drop_duplicates(subset=[column], inplace=True)
     return dataframe
 
