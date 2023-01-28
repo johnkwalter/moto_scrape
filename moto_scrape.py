@@ -62,9 +62,10 @@ ad_details_dict = {
     # 'transmission' : [],
 }
 
+# Flag to tell whether or not an existing dataframe is being used
 new_dataframe = True
 
-# Attempts to open existing dataframe, else creates a new blank dataframe
+# Attempts to open existing dataframe as csv and saves a backup, else creates a new blank dataframe
 try:
     main_df = pd.read_csv(dataframe_loc+'.csv')
     main_df.to_csv(dataframe_loc+'_old.csv', encoding='utf-8', index=False)
@@ -72,23 +73,22 @@ try:
 except:
     main_df = pd.DataFrame([ad_details_dict])
 
-
 # Create a list of urls by list of cities to search craigslist with
 def city_search_url_list(cities):
-    url_search_list = []
+    base_city_url_search_list = []
     for city in cities:
-        url_search_list.append('https://' + city + '.craigslist.org/search/mca#search=1~list~')
-    return url_search_list
+        base_city_url_search_list.append('https://' + city + '.craigslist.org/search/mca#search=1~list~')
+    return base_city_url_search_list
 
 # Brings up a list of search results on Craiglist and scrapes all of the urls of each ad
 def get_list_of_urls(url):
     driver.get(url)
     WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "titlestring")))
     results_list = driver.find_elements(By.CLASS_NAME, 'titlestring')
-    url_list = []
+    url_ad_list = []
     for elem in results_list:
-        url_list.append(elem.get_attribute('href'))
-    return url_list
+        url_ad_list.append(elem.get_attribute('href'))
+    return url_ad_list
 
 # Crawls through an individual ad and creates a dictionary of the ad details
 def cl_ad_scrape(url):
@@ -165,7 +165,7 @@ def get_url_ad_list(base_url):
     return full_url_ad_list
 
 # Adds a new row to the dataframe for each individual ad
-def add_ad_to_dataframe(full_url_ad_list, main_df):
+def add_ads_to_dataframe(full_url_ad_list, main_df):
     i = 0
     total = len(full_url_ad_list)
     for url_ad in full_url_ad_list:
@@ -174,7 +174,7 @@ def add_ad_to_dataframe(full_url_ad_list, main_df):
         new_df = pd.DataFrame([ad_details])
         main_df = pd.concat([main_df, new_df], ignore_index=True)
         i+=1
-        print(f" {str(i)} of {str(total)} scraped {str(int((i/total)*100))}% complete ~{str(int(1.7*(total - i)))} seconds left    ", end='\r')
+        print(f" {str(i)} of {str(total)} scraped {str(int((i/total)*100))}% complete ~{str(int(2.15*(total - i)))} seconds left    ", end='\r')
     print('') # <-- clear the line where cursor is located
     print(' done')
     return main_df
@@ -182,17 +182,25 @@ def add_ad_to_dataframe(full_url_ad_list, main_df):
 # Combines all of the city ad lists into one large url list
 def combine_city_url_lists(url_search_list):
     full_url_ad_list = []
-    for url in url_search_list:
-        url_ad_list = get_url_ad_list(url)
-        for url in url_ad_list:
-            full_url_ad_list.append(url)
+    for search_url in url_search_list:
+        url_ad_list = get_url_ad_list(search_url)
+        for ad_url in url_ad_list:
+            full_url_ad_list.append(ad_url)
     return full_url_ad_list
 
+# Deduplicates the list of ad urls
+def dedupe_full_url_ad_list(full_url_ad_list):
+    deduped_list = []
+    for url in full_url_ad_list:
+        if url not in deduped_list:
+            deduped_list.append(url)
+    return deduped_list
+
 # Compares new list of urls to already scraped urls to only scrape new urls
-def dedupe_url_ad_list(full_url_ad_list, main_df):
+def dedupe_url_ad_list_from_df(ad_list, main_df):
     deduped_url_ad_list = []
     established_url_list = main_df['url'].values.tolist()
-    for url in full_url_ad_list:
+    for url in ad_list:
         if url not in established_url_list:
             deduped_url_ad_list.append(url)
     print(f'{str(len(deduped_url_ad_list))} new ads have been found')
@@ -214,15 +222,21 @@ def dedupe_dataframe(dataframe, column):
     dataframe.drop_duplicates(subset=[column], inplace=True)
     return dataframe
 
-url_search_list = city_search_url_list(cities)
-full_url_ad_list = combine_city_url_lists(url_search_list)
+# Creates a list of the base search url for each city in the cities list
+base_city_url_search_list = city_search_url_list(cities)
 
-# Check to see if we're working with a new dataframe, and if so, skips the deduping
+# Creates a list of all of the urls of each ad from each city search
+full_url_ad_list = combine_city_url_lists(base_city_url_search_list)
+
+# Deduplicates the list made above because sometimes nearby cities show the same nearby ads
+deduped_full_url_ad_list = dedupe_full_url_ad_list(full_url_ad_list)
+
+# Check to see if we're working with a new dataframe, and if so, skips the deduping from dataframe
 if new_dataframe:
-    new_main_df = add_ad_to_dataframe(full_url_ad_list, main_df)
+    new_main_df = add_ads_to_dataframe(deduped_full_url_ad_list, main_df)
 else:    
-    deduped_url_ad_list = dedupe_url_ad_list(full_url_ad_list, main_df)
-    new_main_df = add_ad_to_dataframe(deduped_url_ad_list, main_df)
+    deduped_url_ad_list_from_df = dedupe_url_ad_list_from_df(deduped_full_url_ad_list, main_df)
+    new_main_df = add_ads_to_dataframe(deduped_url_ad_list_from_df, main_df)
 
 # Deduplicates the DataFrame and requires a column argument to dedupe by
 deduped_new_main_df = dedupe_dataframe(new_main_df, column='url')
