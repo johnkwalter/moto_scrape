@@ -10,16 +10,13 @@ from datetime import datetime
 
 # selenium 4
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 
-options = Options()
-options.page_load_strategy = 'normal'
-driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
+driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
 # above imports and driver from https://pypi.org/project/webdriver-manager/
 
 from urllib.parse import urlparse
