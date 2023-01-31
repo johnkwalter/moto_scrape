@@ -1,0 +1,67 @@
+
+class TestData:
+    states_cities_dict = {
+        'washington' : [
+                "seattle", 
+                "bellingham",
+                "kpr",
+                "moseslake",
+                "olympic",
+                "pullman",
+                "skagit",
+                "spokane",
+                "wenatchee",
+                "yakima"
+                ],
+
+        'oregon' : [
+                "portland",
+                "bend",
+                "corvallis",
+                "eastoregon",
+                "eugene",
+                "klamath",
+                "medford",
+                "oregoncoast",
+                "roseburg",
+                "salem",
+                ],
+
+        'idaho' : [
+                "boise",
+                "eastidaho",
+                "lewiston",
+                "twinfalls",
+                ],
+
+        'california' : [
+                "bakersfield",
+                "chico",
+                "fresno",
+                "goldcountry",
+                "hanford",
+                "humboldt",
+                "imperial",
+                "inlandempire",
+                "losangeles",
+                "mendocino",
+                "merced",
+                "modesto",
+                "monterey",
+                "orangecounty",
+                "palmsprings",
+                "redding",
+                "sacramento",
+                "sandiego",
+                "sfbay",
+                "slo",
+                "santabarbara",
+                "santamaria",
+                "siskiyou",
+                "stockton",
+                "susanville",
+                "ventura",
+                "visalia",
+                "yubasutter",
+                ],
+        }

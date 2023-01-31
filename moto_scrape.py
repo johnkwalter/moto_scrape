@@ -7,7 +7,6 @@ import re
 import pandas as pd
 from datetime import datetime
 
-
 # selenium 4
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -19,6 +18,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
 # above imports and driver from https://pypi.org/project/webdriver-manager/
 
+from moto_scrape_data import TestData
+
 from urllib.parse import urlparse
 
 """
@@ -29,28 +30,19 @@ TODO: DONE break the received URLS into parts and place the unique post IDs
 
 TODO: DONE Incorporate list of cities to iterate through to create big url list
 TODO: DONE Dedupe dataframe upon writing it to a csv
-TODO: Variable and function names are messy and could be made clearer
+TODO: DONE Variable and function names are messy and could be made clearer
 
-BUG: Navigating to 4th page of search results redirects to 3rd page
+BUG: FIXED Navigating to 4th page of search results redirects to 3rd page
         https://projectsnproducts.atlassian.net/browse/MS-11
 """
 
-# Name of the dataframe
-dataframe_loc = 'pacific_northwest_cl_moto'
+# Name of the dataframes to be made/opened by state
+locations = []
+for key in TestData.states_cities_dict:
+    locations.append(key)
 
-# List of cities that craigslist motorcycle ads will be scraped from
-cities = ["seattle", 
-        "portland",
-        "bellingham",
-        "kpr",
-        "moseslake",
-        "olympic",
-        "pullman",
-        "skagit",
-        "spokane",
-        "wenatchee",
-        "yakima"
-        ]
+# Dictionary of states with list of cities that craigslist motorcycle ads will be scraped from
+state_cities_dict = TestData.states_cities_dict
 
 # Create a blank dictionary to initialize a dataframe from
 ad_details_dict = {
@@ -64,17 +56,6 @@ ad_details_dict = {
     # 'title status' : [],
     # 'transmission' : [],
 }
-
-# Flag to tell whether or not an existing dataframe is being used
-new_dataframe = True
-
-# Attempts to open existing dataframe as csv and saves a backup, else creates a new blank dataframe
-try:
-    main_df = pd.read_csv(dataframe_loc+'.csv')
-    main_df.to_csv(dataframe_loc+'_old.csv', encoding='utf-8', index=False)
-    new_dataframe = False
-except:
-    main_df = pd.DataFrame([ad_details_dict])
 
 # Create a list of urls by list of cities to search craigslist with
 def city_search_url_list(cities):
@@ -228,24 +209,41 @@ def dedupe_dataframe(dataframe, column):
     dataframe.drop_duplicates(subset=[column], inplace=True)
     return dataframe
 
-# Creates a list of the base search url for each city in the cities list
-base_city_url_search_list = city_search_url_list(cities)
+# Iterates through each of the states' cities based on the data in moto_scrape_data.py
+#   and creates a dataframe and subsequent csv for each.
+for location in locations:
 
-# Creates a list of all of the urls of each ad from each city search
-full_url_ad_list = combine_city_url_lists(base_city_url_search_list)
+    print(f'Scraping the ads for the state of {location.title()}')
+    
+    # Flag to tell whether or not an existing dataframe is being used
+    new_dataframe = True
 
-# Deduplicates the list made above because sometimes nearby cities show the same nearby ads
-deduped_full_url_ad_list = dedupe_full_url_ad_list(full_url_ad_list)
+    # Attempts to open existing dataframe as csv and saves a backup, else creates a new blank dataframe
+    try:
+        main_df = pd.read_csv(location+'_cl_moto.csv')
+        main_df.to_csv(location+'_cl_moto_old.csv', encoding='utf-8', index=False)
+        new_dataframe = False
+    except:
+        main_df = pd.DataFrame([ad_details_dict])
 
-# Check to see if we're working with a new dataframe, and if so, skips the deduping from dataframe
-if new_dataframe:
-    new_main_df = add_ads_to_dataframe(deduped_full_url_ad_list, main_df)
-else:    
-    deduped_url_ad_list_from_df = dedupe_url_ad_list_from_df(deduped_full_url_ad_list, main_df)
-    new_main_df = add_ads_to_dataframe(deduped_url_ad_list_from_df, main_df)
+    # Creates a list of the base search url for each city in the cities list
+    base_city_url_search_list = city_search_url_list(TestData.states_cities_dict[location])
 
-# Deduplicates the DataFrame and requires a column argument to dedupe by
-deduped_new_main_df = dedupe_dataframe(new_main_df, column='url')
+    # Creates a list of all of the urls of each ad from each city search
+    full_url_ad_list = combine_city_url_lists(base_city_url_search_list)
 
-# Creates a csv file with all of the dataframe information
-deduped_new_main_df.to_csv(f'{dataframe_loc}.csv', encoding='utf-8', index=False)
+    # Deduplicates the list made above because sometimes nearby cities show the same nearby ads
+    deduped_full_url_ad_list = dedupe_full_url_ad_list(full_url_ad_list)
+
+    # Check to see if we're working with a new dataframe, and if so, skips the deduping from dataframe
+    if new_dataframe:
+        new_main_df = add_ads_to_dataframe(deduped_full_url_ad_list, main_df)
+    else:    
+        deduped_url_ad_list_from_df = dedupe_url_ad_list_from_df(deduped_full_url_ad_list, main_df)
+        new_main_df = add_ads_to_dataframe(deduped_url_ad_list_from_df, main_df)
+
+    # Deduplicates the DataFrame and requires a column argument to dedupe by
+    deduped_new_main_df = dedupe_dataframe(new_main_df, column='url')
+
+    # Creates a csv file with all of the dataframe information
+    deduped_new_main_df.to_csv(f'{location}_cl_moto.csv', encoding='utf-8', index=False)
