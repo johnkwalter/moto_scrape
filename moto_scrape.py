@@ -41,7 +41,8 @@ locations = []
 for key in TestData.states_cities_dict:
     locations.append(key)
 
-# Dictionary of states with list of cities that craigslist motorcycle ads will be scraped from
+# Dictionary of states with list of cities that craigslist 
+#   motorcycle ads will be scraped from
 state_cities_dict = TestData.states_cities_dict
 
 # Create a blank dictionary to initialize a dataframe from
@@ -61,7 +62,7 @@ ad_details_dict = {
 def city_search_url_list(cities):
     base_city_url_search_list = []
     for city in cities:
-        base_city_url_search_list.append('https://' + city + '.craigslist.org/search/mca#search=1~list~')
+        base_city_url_search_list.append(f'https://{city}.craigslist.org/search/mca#search=1~list~')
     return base_city_url_search_list
 
 # Brings up a list of search results on Craiglist and scrapes all of the urls of each ad
@@ -218,16 +219,17 @@ for location in locations:
     # Flag to tell whether or not an existing dataframe is being used
     new_dataframe = True
 
-    # Attempts to open existing dataframe as csv and saves a backup, else creates a new blank dataframe
+    # Attempts to open existing dataframe as csv and saves a backup, 
+    #   else creates a new blank dataframe
     try:
-        main_df = pd.read_csv(location+'_cl_moto.csv')
-        main_df.to_csv(location+'_cl_moto_old.csv', encoding='utf-8', index=False)
+        main_df = pd.read_csv(f'data/{location}_cl_moto.csv')
+        main_df.to_csv(f'data/{location}_cl_moto_old.csv', encoding='utf-8', index=False)
         new_dataframe = False
     except:
         main_df = pd.DataFrame([ad_details_dict])
 
     # Creates a list of the base search url for each city in the cities list
-    base_city_url_search_list = city_search_url_list(TestData.states_cities_dict[location])
+    base_city_url_search_list = city_search_url_list(state_cities_dict[location])
 
     # Creates a list of all of the urls of each ad from each city search
     full_url_ad_list = combine_city_url_lists(base_city_url_search_list)
@@ -235,7 +237,8 @@ for location in locations:
     # Deduplicates the list made above because sometimes nearby cities show the same nearby ads
     deduped_full_url_ad_list = dedupe_full_url_ad_list(full_url_ad_list)
 
-    # Check to see if we're working with a new dataframe, and if so, skips the deduping from dataframe
+    # Check to see if we're working with a new dataframe, and 
+    #   if so, skips the deduping from dataframe
     if new_dataframe:
         new_main_df = add_ads_to_dataframe(deduped_full_url_ad_list, main_df)
     else:    
@@ -246,4 +249,4 @@ for location in locations:
     deduped_new_main_df = dedupe_dataframe(new_main_df, column='url')
 
     # Creates a csv file with all of the dataframe information
-    deduped_new_main_df.to_csv(f'{location}_cl_moto.csv', encoding='utf-8', index=False)
+    deduped_new_main_df.to_csv(f'data/{location}_cl_moto.csv', encoding='utf-8', index=False)
